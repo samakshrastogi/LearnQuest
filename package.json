@@ -10,6 +10,7 @@
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "build:all": "npm run build --workspaces --if-present",
+    "build:web": "npm run build --workspace=packages/shared-types && npm run build --workspace=packages/validation && npm run build --workspace=apps/web",
     "seed": "npm run seed --workspace=apps/api",
     "test": "npm run test --workspaces --if-present"
   },
