@@ -53,7 +53,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
         });
         return true;
       } catch (err: any) {
-        const errMsg = err.response?.data?.message || 'Login failed. Please try again.';
+        let errMsg = 'Login failed. Please try again.';
+        if (err.response?.data) {
+          const data = err.response.data;
+          if (data.errors && Array.isArray(data.errors)) {
+            errMsg = data.errors.map((e: any) => e.message).join(', ');
+          } else {
+            errMsg = data.message || errMsg;
+          }
+        }
         set({ error: errMsg, loading: false });
         return false;
       }
@@ -75,7 +83,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
         });
         return true;
       } catch (err: any) {
-        const errMsg = err.response?.data?.message || 'Registration failed.';
+        let errMsg = 'Registration failed.';
+        if (err.response?.data) {
+          const data = err.response.data;
+          if (data.errors && Array.isArray(data.errors)) {
+            errMsg = data.errors.map((e: any) => e.message).join(', ');
+          } else {
+            errMsg = data.message || errMsg;
+          }
+        }
         set({ error: errMsg, loading: false });
         return false;
       }
@@ -93,7 +109,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
         });
         return true;
       } catch (err: any) {
-        const errMsg = err.response?.data?.message || 'Onboarding failed.';
+        let errMsg = 'Onboarding failed.';
+        if (err.response?.data) {
+          const data = err.response.data;
+          if (data.errors && Array.isArray(data.errors)) {
+            errMsg = data.errors.map((e: any) => e.message).join(', ');
+          } else {
+            errMsg = data.message || errMsg;
+          }
+        }
         set({ error: errMsg, loading: false });
         return false;
       }
