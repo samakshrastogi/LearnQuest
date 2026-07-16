@@ -3,8 +3,8 @@ import path from 'path';
 import { z } from 'zod';
 import { logger } from './logger.js';
 
-// Load .env file from workspace root
-dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+// Load .env file from workspace subdirectory or root
+dotenv.config({ path: path.resolve(process.cwd(), 'apps/api/.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const envSchema = z.object({
@@ -24,11 +24,8 @@ const envSchema = z.object({
   AWS_S3_BUCKET: z.string().optional(),
   AWS_S3_PRIVATE_BUCKET: z.string().optional(),
   AWS_CLOUDFRONT_URL: z.string().optional(),
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.string().transform((val) => val ? parseInt(val, 10) : undefined).optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASSWORD: z.string().optional(),
-  SMTP_FROM: z.string().default('LearnQuest India <no-reply@learnquest.in>'),
+  RESEND_API_KEY: z.string().optional(),
+  SMTP_FROM: z.string().default('LearnQuest India <onboarding@resend.dev>'),
   AI_PROVIDER: z.enum(['openai', 'gemini', '']).optional().default(''),
   AI_API_KEY: z.string().optional(),
   AI_MODEL: z.string().optional(),

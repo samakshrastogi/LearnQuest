@@ -11,6 +11,7 @@ import { PlayerProgress } from '../models/Activity.js';
 import { UserRole } from '@learnquest/shared-types';
 import { AuthenticatedRequest } from '../middlewares/auth.js';
 import { logger } from '../config/logger.js';
+import { EmailService } from '../services/email.js';
 
 // JWT Generation Helpers
 const generateAccessToken = (userId: string, username: string, role: UserRole): string => {
@@ -394,6 +395,14 @@ export const onboardUser = async (
 
     await session.commitTransaction();
     session.endSession();
+
+    // Send onboarding welcome email asynchronously
+    if (user.email) {
+      const name = createdProfile?.firstName || user.username;
+      EmailService.sendWelcomeEmail(user.email, name, user.role).catch(err => {
+        logger.error(`❌ Welcome email failed for ${user.email}: ${err.message}`);
+      });
+    }
 
     res.status(201).json({
       success: true,
