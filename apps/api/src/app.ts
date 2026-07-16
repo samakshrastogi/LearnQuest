@@ -16,9 +16,11 @@ const app = express();
 const server = http.createServer(app);
 
 // 1. Socket.IO Setup
+const allowedOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim().replace(/\/$/, ''));
+
 const io = new SocketIOServer(server, {
   cors: {
-    origin: env.CORS_ORIGINS.split(','),
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
   },
 });
@@ -48,7 +50,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: env.CORS_ORIGINS.split(','),
+  origin: allowedOrigins,
   credentials: true,
 }));
 
