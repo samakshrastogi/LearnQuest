@@ -3,6 +3,7 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { env } from './config/env.js';
@@ -54,6 +55,8 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
 }));
+
+app.use(cookieParser());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
