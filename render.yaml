@@ -4,7 +4,7 @@ services:
     name: learnquest-api
     env: node
     plan: starter
-    buildCommand: npm install && npm run build --workspace=packages/shared-types && npm run build --workspace=packages/validation && npm run build --workspace=apps/api
+    buildCommand: npm install --production=false && npm run build --workspace=packages/shared-types && npm run build --workspace=packages/validation && npm run build --workspace=apps/api
     startCommand: npm run start --workspace=apps/api
     envVars:
       - key: NODE_ENV
