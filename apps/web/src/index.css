@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-slate-100 font-sans antialiased overflow-x-hidden;
+    background-image: radial-gradient(circle at 50% 0%, hsl(222, 47%, 20%) 0%, hsl(222, 47%, 11%) 70%);
+  }
+
+  /* Custom Scrollbar for RPG feel */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.5);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-gold);
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-slate-900/60 border border-slate-700/50 backdrop-blur-md rounded-2xl shadow-xl;
+  }
+  .glass-input {
+    @apply bg-slate-950/50 border border-slate-700/60 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-gold transition-all;
+  }
+  .btn-gold {
+    @apply bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 font-bold px-6 py-3 rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all;
+  }
+  .btn-cyan {
+    @apply bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all;
+  }
+  .btn-outline {
+    @apply border border-slate-600 text-slate-200 px-6 py-3 rounded-xl hover:bg-slate-800 transition-all;
+  }
+}
