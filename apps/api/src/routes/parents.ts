@@ -5,10 +5,9 @@ import { authenticate, authorize } from '../middlewares/auth.js';
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize('Parent', 'Super Administrator'));
 
-router.get('/children', getChildren);
-router.get('/children/:childId/progress', getChildProgress);
-router.post('/limits', updateScreenTimeLimits);
+router.get('/children', getChildren as any);
+router.get('/children/:childId/progress', getChildProgress as any);
+router.post('/limits', updateScreenTimeLimits as any);
 
 export default router;

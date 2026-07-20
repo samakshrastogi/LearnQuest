@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../utils/api';
+import { useAuthStore } from '../store/auth';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -48,6 +49,20 @@ export default function StudentDashboard() {
     { day: 'Sat', minutes: 30 },
     { day: 'Sun', minutes: 18 },
   ];
+
+  const { updateWallet } = useAuthStore();
+  const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
+
+  const handleClaimQuest = async (questId: string) => {
+    try {
+      const res = await api.post('/students/claim-quest', { questId });
+      const { wallet } = res.data.data;
+      updateWallet(wallet);
+      setClaimedQuests((prev: string[]) => [...prev, questId]);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to claim quest reward.');
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto">
@@ -101,30 +116,40 @@ export default function StudentDashboard() {
             </div>
 
             <div className="flex flex-col gap-3">
-              {quests.map((q: any) => (
-                <div key={q.id} className="flex items-center justify-between p-4 bg-slate-950/40 rounded-xl border border-slate-800/80">
-                  <div className="flex flex-col gap-0.5">
-                    <span className={`font-bold text-sm ${q.isCompleted ? 'line-through text-slate-500' : 'text-slate-200'}`}>
-                      {q.title}
-                    </span>
-                    <span className="text-xs text-slate-400">{q.description}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-xs font-bold text-slate-400">
-                      {q.currentValue} / {q.targetValue}
-                    </span>
-                    {q.isCompleted ? (
-                      <span className="bg-emerald-500/10 text-accent-emerald text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-500/20">
-                        COMPLETED
+              {quests.map((q: any) => {
+                const isClaimed = claimedQuests.includes(q.id);
+                return (
+                  <div key={q.id} className="flex items-center justify-between p-4 bg-slate-950/40 rounded-xl border border-slate-800/80">
+                    <div className="flex flex-col gap-0.5">
+                      <span className={`font-bold text-sm ${q.isCompleted || isClaimed ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                        {q.title}
                       </span>
-                    ) : (
-                      <span className="bg-slate-800 text-slate-400 text-xs font-bold px-2.5 py-1 rounded-full border border-slate-700">
-                        ACTIVE
+                      <span className="text-xs text-slate-400">{q.description}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs font-bold text-slate-400">
+                        {q.currentValue} / {q.targetValue}
                       </span>
-                    )}
+                      {isClaimed ? (
+                        <span className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/20">
+                          CLAIMED (+25 XP)
+                        </span>
+                      ) : q.isCompleted ? (
+                        <button
+                          onClick={() => handleClaimQuest(q.id)}
+                          className="btn-gold px-3 py-1 text-xs font-bold shadow-md"
+                        >
+                          Claim Reward
+                        </button>
+                      ) : (
+                        <span className="bg-slate-800 text-slate-400 text-xs font-bold px-2.5 py-1 rounded-full border border-slate-700">
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

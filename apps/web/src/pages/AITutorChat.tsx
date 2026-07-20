@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuthStore } from '../store/auth';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, Send, Globe, Bot, User, Trash2 } from 'lucide-react';
+import { Sparkles, Send, Globe, Bot, User, Trash2, Volume2 } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -157,13 +157,27 @@ export default function AITutorChat() {
                 </div>
 
                 <div
-                  className={`p-4 rounded-2xl text-xs leading-relaxed border ${
+                  className={`p-4 rounded-2xl text-xs leading-relaxed border relative group ${
                     isBot
                       ? 'bg-slate-900/80 border-slate-800/80 text-slate-200 rounded-tl-none'
                       : 'bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-amber-500/15 text-slate-100 rounded-tr-none'
                   }`}
                 >
                   <p className="whitespace-pre-line">{m.content}</p>
+
+                  {isBot && typeof window !== 'undefined' && 'speechSynthesis' in window && (
+                    <button
+                      onClick={() => {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(m.content);
+                        utterance.rate = 0.95;
+                        window.speechSynthesis.speak(utterance);
+                      }}
+                      className="mt-2 text-[10px] bg-slate-950 text-cyan-400 font-bold px-2 py-1 rounded border border-slate-800 flex items-center gap-1 hover:bg-slate-800 transition-all"
+                    >
+                      <Volume2 className="h-3 w-3 text-cyan-400" /> Listen to Guruji
+                    </button>
+                  )}
                 </div>
               </div>
             );

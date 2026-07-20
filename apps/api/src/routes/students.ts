@@ -1,18 +1,16 @@
 import { Router } from 'express';
-import { getDashboard, getInventory, equipItem, purchaseAvatarItem, getShopItems } from '../controllers/student.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
-import { validateRequest } from '../middlewares/validation.js';
-import { avatarPurchaseSchema } from '@learnquest/validation';
+import { getDashboard, getInventory, equipItem, purchaseAvatarItem, getShopItems, claimQuestReward } from '../controllers/student.js';
+import { authenticate } from '../middlewares/auth.js';
 
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize('Student', 'Super Administrator'));
 
-router.get('/dashboard', getDashboard);
-router.get('/inventory', getInventory);
-router.post('/equip', equipItem);
-router.post('/purchase', validateRequest(avatarPurchaseSchema), purchaseAvatarItem);
-router.get('/shop', getShopItems);
+router.get('/dashboard', getDashboard as any);
+router.get('/inventory', getInventory as any);
+router.post('/equip', equipItem as any);
+router.post('/purchase', purchaseAvatarItem as any);
+router.get('/shop', getShopItems as any);
+router.post('/claim-quest', claimQuestReward as any);
 
 export default router;

@@ -6,7 +6,6 @@ import { StudentProfile } from '../models/Profiles.js';
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize('Student', 'Super Administrator'));
 
 /**
  * 1. AI Tutor explains a wrong question

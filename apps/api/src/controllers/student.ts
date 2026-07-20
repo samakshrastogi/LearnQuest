@@ -265,3 +265,41 @@ export const getShopItems = async (req: any, res: Response, next: NextFunction):
     next(error);
   }
 };
+
+export const claimQuestReward = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = req.user;
+    const { questId } = req.body;
+
+    const student = await StudentProfile.findOne({ userId: user?._id });
+    if (!student) {
+      res.status(404).json({ success: false, message: 'Student profile not found' });
+      return;
+    }
+
+    student.xp += 25;
+    student.coins += 10;
+    await student.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Quest reward claimed successfully',
+      data: {
+        questId,
+        reward: { xp: 25, coins: 10 },
+        wallet: {
+          xp: student.xp,
+          coins: student.coins,
+          gems: student.gems,
+          energy: student.energy,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

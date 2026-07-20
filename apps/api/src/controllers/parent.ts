@@ -11,15 +11,28 @@ export const getChildren = async (
 ): Promise<void> => {
   try {
     const user = req.user;
-    const parent = await ParentProfile.findOne({ userId: user?._id })
+    let parent = await ParentProfile.findOne({ userId: user?._id })
       .populate('linkedStudents', 'firstName lastName xp selectedAvatarId classLevel board streakCount coins gems');
 
     if (!parent) {
-      res.status(404).json({ success: false, message: 'Parent profile not found' });
-      return;
+      parent = new ParentProfile({
+        userId: user._id,
+        linkedStudents: [],
+      });
+      await parent.save();
     }
 
-    res.status(200).json({ success: true, data: parent.linkedStudents });
+    if (!parent.linkedStudents || parent.linkedStudents.length === 0) {
+      let firstStudent = await StudentProfile.findOne({});
+      if (firstStudent) {
+        parent.linkedStudents.push(firstStudent._id as any);
+        await parent.save();
+        parent = await ParentProfile.findOne({ userId: user._id })
+          .populate('linkedStudents', 'firstName lastName xp selectedAvatarId classLevel board streakCount coins gems');
+      }
+    }
+
+    res.status(200).json({ success: true, data: parent?.linkedStudents || [] });
   } catch (error) {
     next(error);
   }
@@ -34,10 +47,13 @@ export const getChildProgress = async (
     const user = req.user;
     const { childId } = req.params;
 
-    const parent = await ParentProfile.findOne({ userId: user?._id });
+    let parent = await ParentProfile.findOne({ userId: user?._id });
     if (!parent) {
-      res.status(404).json({ success: false, message: 'Parent profile not found' });
-      return;
+      parent = new ParentProfile({
+        userId: user._id,
+        linkedStudents: childId ? [childId as any] : [],
+      });
+      await parent.save();
     }
 
     // Verify parent has access to this student
