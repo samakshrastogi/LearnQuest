@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
-import { ShieldAlert, Compass, Eye, EyeOff, Sparkles, HelpCircle } from 'lucide-react';
+import { ShieldAlert, Compass, Eye, EyeOff, Sparkles, HelpCircle, UserCheck, Shield, GraduationCap, Users } from 'lucide-react';
 
 export default function Login() {
-  const { login, error, loading } = useAuthStore();
+  const { login, error, loading, isAuthenticated, user, onboarded } = useAuthStore();
   const navigate = useNavigate();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
@@ -14,6 +14,23 @@ export default function Login() {
   
   // Interactive Guruji advisor hints
   const [gurujiHint, setGurujiHint] = useState("Namaste! Enter your hero credentials to continue the quest! 🔮");
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (!onboarded) {
+        navigate('/onboard', { replace: true });
+      } else if (user.role === 'Student') {
+        navigate('/dashboard', { replace: true });
+      } else if (user.role === 'Parent') {
+        navigate('/parent/dashboard', { replace: true });
+      } else if (user.role === 'Teacher') {
+        navigate('/teacher/dashboard', { replace: true });
+      } else {
+        navigate('/admin/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, onboarded, navigate]);
 
   useEffect(() => {
     if (validationError || error) {
@@ -25,29 +42,38 @@ export default function Login() {
     e.preventDefault();
     setValidationError('');
 
-    if (!usernameOrEmail || !password) {
+    const cleanUsername = usernameOrEmail.trim().toLowerCase();
+    if (!cleanUsername || !password) {
       setValidationError('Please fill in all fields.');
       return;
     }
 
-    const success = await login(usernameOrEmail, password);
+    const success = await login(cleanUsername, password);
     if (success) {
       const storeState = useAuthStore.getState();
-      const user = storeState.user;
-      const onboarded = storeState.onboarded;
+      const currentUser = storeState.user;
+      const currentOnboarded = storeState.onboarded;
 
-      if (!onboarded) {
+      if (!currentOnboarded) {
         navigate('/onboard');
-      } else if (user?.role === 'Student') {
+      } else if (currentUser?.role === 'Student') {
         navigate('/dashboard');
-      } else if (user?.role === 'Parent') {
+      } else if (currentUser?.role === 'Parent') {
         navigate('/parent/dashboard');
-      } else if (user?.role === 'Teacher') {
+      } else if (currentUser?.role === 'Teacher') {
         navigate('/teacher/dashboard');
       } else {
         navigate('/admin/dashboard');
       }
     }
+  };
+
+  // Quick 1-click Demo Account Logins
+  const handleQuickLogin = async (demoUsername: string) => {
+    setUsernameOrEmail(demoUsername);
+    setPassword('password123');
+    setGurujiHint(`Logging into ${demoUsername}'s hero account... 🚀`);
+    await login(demoUsername, 'password123');
   };
 
   return (
@@ -97,7 +123,6 @@ export default function Login() {
 
           {/* Speech bubble */}
           <div className="relative bg-slate-900 border border-slate-800 p-5 rounded-2xl max-w-sm shadow-xl flex flex-col gap-1.5 animate-bounce" style={{ animationDuration: '4s' }}>
-            {/* Bubble arrow */}
             <div className="absolute top-1/2 -right-3 md:top-auto md:bottom-1/2 md:left-1/2 md:-translate-x-1/2 md:top-full md:border-t-slate-900 border-8 border-transparent md:-translate-y-0 hidden md:block" />
             <span className="text-xs font-black text-amber-500 uppercase tracking-widest">Guruji says:</span>
             <p className="text-sm font-medium text-slate-200 leading-relaxed font-sans">{gurujiHint}</p>
@@ -114,6 +139,36 @@ export default function Login() {
               <div>
                 <h1 className="text-2xl font-extrabold tracking-tight font-sans">Welcome Back, Hero!</h1>
                 <p className="text-sm text-slate-400">Continue your learning quest and earn coins</p>
+              </div>
+            </div>
+
+            {/* Quick 1-Click Demo Accounts */}
+            <div className="flex flex-col gap-2 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                <UserCheck className="h-3.5 w-3.5" /> 1-Click Demo Fast Login
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('student1')}
+                  className="px-2.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1 transition-all"
+                >
+                  <GraduationCap className="h-3.5 w-3.5 text-amber-400" /> Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('parent1')}
+                  className="px-2.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1 transition-all"
+                >
+                  <Users className="h-3.5 w-3.5 text-cyan-400" /> Parent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('teacher1')}
+                  className="px-2.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1 transition-all"
+                >
+                  <Shield className="h-3.5 w-3.5 text-purple-400" /> Teacher
+                </button>
               </div>
             </div>
 
@@ -136,10 +191,10 @@ export default function Login() {
                 <input
                   type="text"
                   value={usernameOrEmail}
-                  onChange={(e) => setUsernameOrEmail(e.target.value.toLowerCase().replace(/\s+/g, ''))}
+                  onChange={(e) => setUsernameOrEmail(e.target.value)}
                   onFocus={() => setGurujiHint("Type your unique hero name! Don't worry about capital letters. 📝")}
                   className="glass-input text-lg py-3.5 focus:border-amber-500/50"
-                  placeholder="e.g. aarav12"
+                  placeholder="e.g. aarav12 or student1"
                   autoFocus
                 />
               </div>
