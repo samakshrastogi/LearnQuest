@@ -405,4 +405,71 @@ Aap is topic ki pre-loaded video reels ya curriculum questions dekh sakte hain. 
 Please check your dashboard recommended list or watch curriculum reels to review your subjects. Keep questing!`;
     }
   }
+
+  /**
+   * Auto-generates an educational learning reel using Gemini 1.5 Flash
+   */
+  static async autoGenerateReel(
+    classLevel: number,
+    subjectName: string = 'Science',
+    topicName: string = 'Photosynthesis & Plant Food'
+  ) {
+    const hasApiKey = !!env.AI_API_KEY;
+    let reelData: any = null;
+
+    if (hasApiKey) {
+      try {
+        const prompt = `You are an educational video producer for LearnQuest India.
+Generate a short 9:16 portrait video reel content object for Class ${classLevel} on Subject "${subjectName}" and Topic "${topicName}".
+Return pure JSON without markdown backticks matching this structure:
+{
+  "title": "Reel Title",
+  "description": "Short catchy summary of the concept",
+  "scriptNarration": "Narrator text to be read aloud",
+  "checkpoints": [
+    {
+      "timestampSeconds": 5,
+      "questionText": "Quick test question?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctOptionIndex": 0,
+      "explanation": "Why this option is correct"
+    }
+  ]
+}`;
+
+        let rawResponse = '';
+        const res = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${env.AI_MODEL || 'gemini-1.5-flash'}:generateContent?key=${env.AI_API_KEY}`,
+          { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+          { timeout: 10000 }
+        );
+        rawResponse = res.data.candidates[0].content.parts[0].text;
+        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          reelData = JSON.parse(jsonMatch[0]);
+        }
+      } catch (err: any) {
+        logger.error(`⚠️ Gemini Reel Generation error: ${err.message}`);
+      }
+    }
+
+    if (!reelData) {
+      reelData = {
+        title: `${topicName} - Class ${classLevel} Concept`,
+        description: `Learn the fundamentals of ${topicName} in Class ${classLevel} ${subjectName}!`,
+        scriptNarration: `Welcome to Class ${classLevel} ${subjectName}! Today we are mastering ${topicName}. Watch carefully and answer the interactive checkpoint questions!`,
+        checkpoints: [
+          {
+            timestampSeconds: 5,
+            questionText: `What is the core concept of ${topicName}?`,
+            options: ['Understanding core principles', 'Random guess', 'Skip concept', 'None of these'],
+            correctOptionIndex: 0,
+            explanation: 'Core principles help build a strong foundation!',
+          },
+        ],
+      };
+    }
+
+    return reelData;
+  }
 }

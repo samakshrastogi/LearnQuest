@@ -4,7 +4,45 @@ import { Question, QuestionAttempt, StudentMastery } from '../models/Activity.js
 import { StudentProfile } from '../models/Profiles.js';
 import { AuthenticatedRequest } from '../middlewares/auth.js';
 import { WalletService } from '../services/wallet.js';
+import { AIService } from '../services/ai.js';
 import mongoose from 'mongoose';
+
+export const generateAIReel = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = req.user;
+    const { classLevel, subjectId, topicName } = req.body;
+
+    const student = await StudentProfile.findOne({ userId: user?._id });
+    const targetClass = classLevel ? parseInt(String(classLevel), 10) : (student?.classLevel || 5);
+
+    const aiReel = await AIService.autoGenerateReel(targetClass, 'Science', topicName || 'Photosynthesis & Plant Food');
+
+    const newReel = new Reel({
+      title: aiReel.title,
+      description: aiReel.description,
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      subjectId: subjectId || undefined,
+      classLevel: targetClass,
+      language: 'en',
+      likesCount: 5,
+      dislikesCount: 0,
+      isVerified: true,
+    });
+    await newReel.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'AI Learning Reel generated successfully',
+      data: newReel,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getReelsFeed = async (
   req: any,

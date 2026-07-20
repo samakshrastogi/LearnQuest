@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { getReelsFeed, likeReel, dislikeReel, saveReel, submitReelQuiz, uploadReel } from '../controllers/reels.js';
+import { getReelsFeed, likeReel, dislikeReel, saveReel, submitReelQuiz, uploadReel, generateAIReel } from '../controllers/reels.js';
 import { authenticate } from '../middlewares/auth.js';
 
 const localUploadsDir = path.resolve(process.cwd(), 'uploads');
@@ -29,11 +29,12 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/feed', getReelsFeed);
-router.post('/like', likeReel);
-router.post('/dislike', dislikeReel);
-router.post('/save', saveReel);
-router.post('/upload', upload.single('video'), uploadReel);
-router.post('/quiz/submit', submitReelQuiz);
+router.get('/feed', getReelsFeed as any);
+router.post('/like', likeReel as any);
+router.post('/dislike', dislikeReel as any);
+router.post('/save', saveReel as any);
+router.post('/upload', upload.single('video'), uploadReel as any);
+router.post('/quiz/submit', submitReelQuiz as any);
+router.post('/generate-ai', generateAIReel as any);
 
 export default router;

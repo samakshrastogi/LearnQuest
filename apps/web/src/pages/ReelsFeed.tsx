@@ -249,10 +249,28 @@ export default function ReelsFeed() {
     return `${serverOrigin}${url}`;
   };
 
+  const [generatingAI, setGeneratingAI] = useState(false);
+
+  const handleAutoGenerateAI = async () => {
+    setGeneratingAI(true);
+    try {
+      await api.post('/reels/generate-ai', {
+        subjectId: selectedSubjectId || undefined,
+        topicName: 'CBSE Science & Math Exploration',
+      });
+      refetch();
+      alert('✨ AI Learning Reel generated and added to your feed!');
+    } catch (err: any) {
+      alert('Failed to generate AI reel.');
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-6 p-4 md:p-6 relative">
       
-      {/* 1. Top Bar Controls: Subject Dropdown, Chapter Dropdown, Upload Reel Button */}
+      {/* 1. Top Bar Controls: Subject Dropdown, Chapter Dropdown, Auto-Generate AI & Upload Reel */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-xl backdrop-blur-md">
         
         {/* Left: Dropdowns */}
@@ -301,14 +319,27 @@ export default function ReelsFeed() {
           </div>
         </div>
 
-        {/* Right: Upload Reel Button */}
-        <button
-          onClick={() => setShowUploadModal(true)}
-          className="btn-gold px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-amber-500/10 transform hover:scale-105 active:scale-95 transition-all"
-        >
-          <Plus className="h-4 w-4 stroke-[3]" />
-          <span>Upload Reel</span>
-        </button>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-3">
+          {/* AI Auto-Generate Reel */}
+          <button
+            onClick={handleAutoGenerateAI}
+            disabled={generatingAI}
+            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all transform hover:scale-105 disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4 fill-slate-950" />
+            <span>{generatingAI ? 'Generating AI Reel...' : 'Auto-Generate AI Reel'}</span>
+          </button>
+
+          {/* Upload Reel Button */}
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="btn-cyan px-4 py-2.5 text-xs font-bold flex items-center gap-2 shadow-md"
+          >
+            <Upload className="h-4 w-4" />
+            <span>Upload Reel</span>
+          </button>
+        </div>
       </div>
 
       {/* Share Toast Notification */}
