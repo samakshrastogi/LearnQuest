@@ -19,32 +19,47 @@ export const getReelsFeed = async (
     }
 
     const student = await StudentProfile.findOne({ userId: user._id });
-    if (!student) {
-      res.status(404).json({ success: false, message: 'Student profile not found', code: 'NOT_FOUND' });
-      return;
+    const { subjectId, chapterId, topicId, classLevel } = req.query;
+
+    const queryFilter: any = { isVerified: true };
+    if (subjectId) queryFilter.subjectId = subjectId;
+    if (chapterId) queryFilter.chapterId = chapterId;
+    if (topicId) queryFilter.topicId = topicId;
+    if (classLevel) {
+      queryFilter.classLevel = parseInt(String(classLevel), 10);
+    } else if (student) {
+      queryFilter.classLevel = student.classLevel;
     }
 
-    // Dynamic feed: filter by student class, preferred language, and verified status
-    const reels = await Reel.find({
-      classLevel: student.classLevel,
-      language: student.languagePreference,
-      isVerified: true,
-    })
+    let reels = await Reel.find(queryFilter)
       .populate('subjectId', 'name code icon')
+      .populate('chapterId', 'name sequence')
       .populate('quizQuestions')
-      .limit(10);
+      .limit(20);
 
-    // Get user interactions for these reels (likes/saves)
+    // Fallback: If filter returns no reels, retrieve all verified reels so feed is never blank
+    if (reels.length === 0) {
+      reels = await Reel.find({ isVerified: true })
+        .populate('subjectId', 'name code icon')
+        .populate('chapterId', 'name sequence')
+        .populate('quizQuestions')
+        .limit(20);
+    }
+
+    // Get user interactions for these reels
     const reelIds = reels.map((r) => r._id);
-    const interactions = await ReelInteraction.find({
-      studentId: student._id,
-      reelId: { $in: reelIds },
-    });
+    const interactions = student
+      ? await ReelInteraction.find({
+          studentId: student._id,
+          reelId: { $in: reelIds },
+        })
+      : [];
 
     const interactionsMap = new Map();
     for (const inter of interactions) {
       interactionsMap.set(inter.reelId.toString(), {
         liked: inter.liked,
+        disliked: inter.disliked,
         saved: inter.saved,
         quizCompleted: inter.quizCompleted,
       });
@@ -53,6 +68,7 @@ export const getReelsFeed = async (
     const feed = reels.map((reel) => {
       const inter = interactionsMap.get(reel._id.toString()) || {
         liked: false,
+        disliked: false,
         saved: false,
         quizCompleted: false,
       };
@@ -63,6 +79,94 @@ export const getReelsFeed = async (
     });
 
     res.status(200).json({ success: true, message: 'Reels feed fetched successfully', data: feed });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const dislikeReel = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = req.user;
+    const { reelId } = req.body;
+
+    const student = await StudentProfile.findOne({ userId: user?._id });
+    if (!student) {
+      res.status(404).json({ success: false, message: 'Student profile not found' });
+      return;
+    }
+
+    let interaction = await ReelInteraction.findOne({ studentId: student._id, reelId });
+    if (!interaction) {
+      interaction = new ReelInteraction({ studentId: student._id, reelId });
+    }
+
+    const previouslyDisliked = interaction.disliked;
+    interaction.disliked = !previouslyDisliked;
+
+    if (interaction.disliked && interaction.liked) {
+      interaction.liked = false;
+      await Reel.findByIdAndUpdate(reelId, { $inc: { likesCount: -1 } });
+    }
+
+    await interaction.save();
+
+    await Reel.findByIdAndUpdate(reelId, {
+      $inc: { dislikesCount: interaction.disliked ? 1 : -1 },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: interaction.disliked ? 'Reel disliked' : 'Reel dislike removed',
+      data: { disliked: interaction.disliked },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadReel = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = req.user;
+    const { title, description, subjectId, chapterId, topicId, classLevel, language, videoUrl } = req.body;
+    let finalVideoUrl = videoUrl;
+
+    if (req.file) {
+      finalVideoUrl = `/uploads/${req.file.filename}`;
+    }
+
+    if (!finalVideoUrl || !title || !subjectId || !chapterId) {
+      res.status(400).json({ success: false, message: 'Video file/URL, title, subject, and chapter are required' });
+      return;
+    }
+
+    const newReel = new Reel({
+      title,
+      description: description || '',
+      videoUrl: finalVideoUrl,
+      subjectId,
+      chapterId,
+      topicId: topicId || undefined,
+      classLevel: classLevel ? parseInt(String(classLevel), 10) : 5,
+      language: language || 'en',
+      teacherId: user.role === 'Teacher' ? user._id : undefined,
+      isVerified: true,
+    });
+
+    await newReel.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Video reel uploaded successfully',
+      data: newReel,
+    });
   } catch (error) {
     next(error);
   }

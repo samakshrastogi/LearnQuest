@@ -57,11 +57,13 @@ export interface IReel extends Document {
   thumbnailUrl?: string;
   subjectId: mongoose.Types.ObjectId;
   chapterId: mongoose.Types.ObjectId;
+  topicId?: mongoose.Types.ObjectId;
   classLevel: number;
   language: 'en' | 'hi';
   teacherId?: mongoose.Types.ObjectId;
   quizQuestions: mongoose.Types.ObjectId[]; // Question IDs for the end quiz
   likesCount: number;
+  dislikesCount: number;
   viewsCount: number;
   isVerified: boolean;
 }
@@ -73,12 +75,14 @@ const ReelSchema = new Schema<IReel>(
     videoUrl: { type: String, required: true },
     thumbnailUrl: String,
     subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true, index: true },
-    chapterId: { type: Schema.Types.ObjectId, ref: 'Chapter', required: true },
+    chapterId: { type: Schema.Types.ObjectId, ref: 'Chapter', required: true, index: true },
+    topicId: { type: Schema.Types.ObjectId, ref: 'Topic', index: true },
     classLevel: { type: Number, required: true, min: 1, max: 10, index: true },
     language: { type: String, required: true, enum: ['en', 'hi'], default: 'en' },
     teacherId: { type: Schema.Types.ObjectId, ref: 'TeacherProfile' },
     quizQuestions: [{ type: Schema.Types.ObjectId, ref: 'Question' }],
     likesCount: { type: Number, default: 0 },
+    dislikesCount: { type: Number, default: 0 },
     viewsCount: { type: Number, default: 0 },
     isVerified: { type: Boolean, default: false, index: true },
   },
@@ -93,6 +97,7 @@ export interface IReelInteraction extends Document {
   reelId: mongoose.Types.ObjectId;
   watchDurationSeconds: number;
   liked: boolean;
+  disliked: boolean;
   saved: boolean;
   quizScore?: number;
   quizCompleted: boolean;
@@ -104,6 +109,7 @@ const ReelInteractionSchema = new Schema<IReelInteraction>(
     reelId: { type: Schema.Types.ObjectId, ref: 'Reel', required: true, index: true },
     watchDurationSeconds: { type: Number, default: 0 },
     liked: { type: Boolean, default: false },
+    disliked: { type: Boolean, default: false },
     saved: { type: Boolean, default: false },
     quizScore: Number,
     quizCompleted: { type: Boolean, default: false },
