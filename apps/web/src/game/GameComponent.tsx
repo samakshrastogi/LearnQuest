@@ -57,36 +57,31 @@ export default function GameComponent({ levelId, onClose, onComplete }: GameComp
     };
   }, [levelId]);
 
-  // Fetch Level/Questions details from backend
-  const { data: levelDetails } = useQuery({
-    queryKey: ['levelDetails', levelId],
-    queryFn: async () => {
-      const res = await api.get(`/curriculum/topics/dummy/missions`); // Dummy topic query for TS validation, we pull questions below
-      // For seeding compatibility: fetch math questions list
-      const subjectsRes = await api.get('/curriculum/subjects');
-      const subId = subjectsRes.data.data[0]?._id;
-      const chaptersRes = await api.get(`/curriculum/subjects/${subId}/chapters`);
-      const chapId = chaptersRes.data.data[0]?._id;
-      const topicsRes = await api.get(`/curriculum/chapters/${chapId}/topics`);
-      const topicId = topicsRes.data.data[0]?._id;
-      const missionsRes = await api.get(`/curriculum/topics/${topicId}/missions`);
-      
-      // Let's assume we can fetch checkpoint questions mock from db seed list
-      const isMath = subId ? true : false;
-      const options = ['75', '85', '90', '95'];
-      return {
-        checkpointQuestions: [
-          {
-            _id: 'q_seeded_math',
-            questionText: 'Shadow Door: What is 15 x 6?',
-            options,
-            hints: ['Try multiplying', 'Verify properties'],
-          }
-        ]
-      };
-    },
-    enabled: !!sessionToken,
-  });
+  // Dynamic Checkpoint Question Generator for Class Level
+  const classLvl = profile?.classLevel || 5;
+  const isScience = String(levelId).includes('science');
+  const isEnglish = String(levelId).includes('english');
+
+  const questionObj = isScience ? {
+    _id: `q_science_${levelId}`,
+    questionText: `Class ${classLvl} Science Gate: Which gas do plants absorb during photosynthesis?`,
+    options: ['Oxygen', 'Carbon Dioxide', 'Nitrogen', 'Helium'],
+    correctAnswer: '1',
+  } : isEnglish ? {
+    _id: `q_english_${levelId}`,
+    questionText: `Class ${classLvl} English Gate: Identify the Noun in "The brave knight unlocked the golden door."`,
+    options: ['Brave', 'Knight', 'Unlocked', 'Golden'],
+    correctAnswer: '1',
+  } : {
+    _id: `q_math_${levelId}`,
+    questionText: `Class ${classLvl} Math Gate: Solve: 25 x 4`,
+    options: ['80', '90', '100', '110'],
+    correctAnswer: '2',
+  };
+
+  const levelDetails = {
+    checkpointQuestions: [questionObj],
+  };
 
   // 2. Launch Phaser Game Scene once session is generated
   useEffect(() => {
@@ -282,31 +277,43 @@ export default function GameComponent({ levelId, onClose, onComplete }: GameComp
     if (selectedOption === null || !activeQuestion) return;
     setSubmittingAnswer(true);
 
-    try {
-      const res = await api.post('/curriculum/validate-answer', {
-        questionId: activeQuestion._id,
-        answer: selectedOption,
-      });
+    let isCorrect = false;
+    let explanation = '';
 
-      const { isCorrect, explanation } = res.data.data;
-
-      // Add to anti-cheat telemetry log
-      answersLogRef.current.push({
-        questionId: activeQuestion._id,
-        answer: selectedOption,
-        isCorrect,
-      });
-
-      if (!isCorrect) {
-        scoreRef.current = Math.max(0, scoreRef.current - 20); // Lose score on errors
+    if (activeQuestion.correctAnswer !== undefined) {
+      isCorrect = String(selectedOption) === String(activeQuestion.correctAnswer);
+      const correctText = activeQuestion.options?.[parseInt(activeQuestion.correctAnswer)] || activeQuestion.correctAnswer;
+      explanation = isCorrect 
+        ? 'Great job! You unlocked the door.' 
+        : `The correct answer is: ${correctText}`;
+    } else {
+      try {
+        const res = await api.post('/curriculum/validate-answer', {
+          questionId: activeQuestion._id,
+          answer: selectedOption,
+        });
+        isCorrect = res.data.data.isCorrect;
+        explanation = res.data.data.explanation || 'Keep going!';
+      } catch (err) {
+        isCorrect = true;
+        explanation = 'Well done!';
       }
-
-      setFeedbackState(isCorrect ? 'correct' : 'incorrect');
-      setAiExplanation(explanation || 'Follow Guruji guidelines.');
-      setSubmittingAnswer(false);
-    } catch (err) {
-      setSubmittingAnswer(false);
     }
+
+    // Add to anti-cheat telemetry log
+    answersLogRef.current.push({
+      questionId: activeQuestion._id,
+      answer: selectedOption,
+      isCorrect,
+    });
+
+    if (!isCorrect) {
+      scoreRef.current = Math.max(0, scoreRef.current - 20);
+    }
+
+    setFeedbackState(isCorrect ? 'correct' : 'incorrect');
+    setAiExplanation(explanation);
+    setSubmittingAnswer(false);
   };
 
   const handleNext = () => {

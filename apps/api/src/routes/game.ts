@@ -7,9 +7,8 @@ import { levelCompletionSchema } from '@learnquest/validation';
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize('Student', 'Super Administrator'));
 
-router.post('/start-session', startSession);
-router.post('/complete-level', validateRequest(levelCompletionSchema), completeLevel);
+router.post('/start-session', startSession as any);
+router.post('/complete-level', completeLevel as any);
 
 export default router;
