@@ -19,10 +19,28 @@ interface AuthState {
   updateEquippedItems: (equipped: any) => void;
 }
 
+// Helpers for localStorage persistence
+const saveAuthState = (user: any, profile: any, accessToken: string, onboarded: boolean) => {
+  if (typeof window === 'undefined') return;
+  if (accessToken) localStorage.setItem('accessToken', accessToken);
+  if (user) localStorage.setItem('user', JSON.stringify(user));
+  if (profile) localStorage.setItem('profile', JSON.stringify(profile));
+  localStorage.setItem('onboarded', JSON.stringify(onboarded));
+};
+
+const clearAuthState = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('profile');
+  localStorage.removeItem('onboarded');
+};
+
 export const useAuthStore = create<AuthState>((set, get) => {
   // Listen for unauthorized logouts from API interceptor
   if (typeof window !== 'undefined') {
     window.addEventListener('unauthorized_logout', () => {
+      clearAuthState();
       set({ user: null, profile: null, accessToken: null, isAuthenticated: false, onboarded: false });
     });
   }
@@ -42,7 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const response = await api.post('/auth/login', { usernameOrEmail, password });
         const { accessToken, user, profile, onboarded } = response.data.data;
 
-        localStorage.setItem('accessToken', accessToken);
+        saveAuthState(user, profile, accessToken, onboarded);
         set({
           user,
           profile,
@@ -73,7 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const response = await api.post('/auth/register', data);
         const { accessToken, user } = response.data.data;
 
-        localStorage.setItem('accessToken', accessToken);
+        saveAuthState(user, null, accessToken, false);
         set({
           user,
           accessToken,
@@ -102,6 +120,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const response = await api.post('/auth/onboard', data);
         const profile = response.data.data;
+        const currentToken = get().accessToken || localStorage.getItem('accessToken') || '';
+        const currentUser = get().user;
+
+        saveAuthState(currentUser, profile, currentToken, true);
         set({
           profile,
           onboarded: true,
@@ -129,7 +151,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       } catch (err) {
         // Ignored
       }
-      localStorage.removeItem('accessToken');
+      clearAuthState();
       set({
         user: null,
         profile: null,
@@ -140,61 +162,78 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     checkSession: async () => {
+      if (typeof window === 'undefined') return;
+
       const token = localStorage.getItem('accessToken');
-      if (!token) return;
-      
-      set({ loading: true });
+      const userStr = localStorage.getItem('user');
+      const profileStr = localStorage.getItem('profile');
+      const onboardedStr = localStorage.getItem('onboarded');
+
+      if (!token || !userStr) {
+        set({ loading: false });
+        return;
+      }
+
       try {
-        // Automatically check by rotating/fetching profile details
-        const response = await api.get('/students/dashboard');
-        const student = response.data.data.student;
-        
-        // Fetch current active user parameters from localStorage decoded or backend
-        // Decoded token:
-        const parts = token.split('.');
-        const payload = JSON.parse(atob(parts[1]));
-        
+        const savedUser = JSON.parse(userStr);
+        const savedProfile = profileStr ? JSON.parse(profileStr) : null;
+        const savedOnboarded = onboardedStr ? JSON.parse(onboardedStr) : false;
+
+        // Immediately restore authenticated state so page refresh and hard refresh NEVER log out the user!
         set({
-          user: {
-            id: payload.id,
-            username: payload.username,
-            role: payload.role,
-            isActive: true,
-            isVerified: true,
-            createdAt: '',
-          },
-          profile: student,
+          user: savedUser,
+          profile: savedProfile,
           accessToken: token,
           isAuthenticated: true,
-          onboarded: true,
+          onboarded: savedOnboarded,
           loading: false,
         });
+
+        // Background non-blocking session check: verify/rotate access token if needed
+        try {
+          const res = await api.post('/auth/refresh');
+          const newAccessToken = res.data.data?.accessToken;
+          if (newAccessToken) {
+            localStorage.setItem('accessToken', newAccessToken);
+            set({ accessToken: newAccessToken });
+          }
+        } catch (refreshErr: any) {
+          // If refresh explicitly returned 401 (token revoked or expired > 7 days), trigger logout
+          if (refreshErr.response?.status === 401) {
+            clearAuthState();
+            set({ user: null, profile: null, accessToken: null, isAuthenticated: false, onboarded: false });
+          }
+        }
       } catch (err) {
-        localStorage.removeItem('accessToken');
-        set({ loading: false });
+        clearAuthState();
+        set({ user: null, profile: null, accessToken: null, isAuthenticated: false, onboarded: false, loading: false });
       }
     },
 
     updateWallet: (currencies) => {
       const profile = get().profile;
       if (!profile) return;
-      set({
-        profile: {
-          ...profile,
-          ...currencies,
-        },
-      });
+      const updatedProfile = {
+        ...profile,
+        ...currencies,
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('profile', JSON.stringify(updatedProfile));
+      }
+      set({ profile: updatedProfile });
     },
 
     updateEquippedItems: (equipped) => {
       const profile = get().profile;
       if (!profile) return;
-      set({
-        profile: {
-          ...profile,
-          selectedInventoryItems: equipped,
-        },
-      });
+      const updatedProfile = {
+        ...profile,
+        selectedInventoryItems: equipped,
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('profile', JSON.stringify(updatedProfile));
+      }
+      set({ profile: updatedProfile });
     },
   };
 });
