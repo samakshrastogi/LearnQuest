@@ -1,40 +1,63 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { Subject, Chapter, Topic, Mission } from '../models/Curriculum.js';
 import { Question, QuestionAttempt, StudentMastery } from '../models/Activity.js';
 import { StudentProfile } from '../models/Profiles.js';
-import { AuthenticatedRequest } from '../middlewares/auth.js';
-import mongoose from 'mongoose';
+import { AIService } from '../services/ai.js';
 
-export const getSubjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getSubjects = async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const subjects = await Subject.find({ isActive: true });
+    let subjects = await Subject.find({ isActive: true });
+    
+    // Auto-generate using Gemini AI if empty
+    if (subjects.length === 0) {
+      const classLevel = req.user?.classLevel || 5;
+      await AIService.generateCurriculumForClass(classLevel);
+      subjects = await Subject.find({ isActive: true });
+    }
+
     res.status(200).json({ success: true, message: 'Subjects fetched successfully', data: subjects });
   } catch (error) {
     next(error);
   }
 };
 
-export const getChapters = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getChapters = async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { subjectId } = req.params;
-    const chapters = await Chapter.find({ subjectId }).sort({ sequence: 1 });
+    let chapters = await Chapter.find({ subjectId }).sort({ sequence: 1 });
+
+    // Auto-generate using Gemini AI if empty
+    if (chapters.length === 0) {
+      const classLevel = req.user?.classLevel || 5;
+      await AIService.generateCurriculumForClass(classLevel);
+      chapters = await Chapter.find({ subjectId }).sort({ sequence: 1 });
+    }
+
     res.status(200).json({ success: true, message: 'Chapters fetched successfully', data: chapters });
   } catch (error) {
     next(error);
   }
 };
 
-export const getTopics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getTopics = async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { chapterId } = req.params;
-    const topics = await Topic.find({ chapterId }).sort({ sequence: 1 });
+    let topics = await Topic.find({ chapterId }).sort({ sequence: 1 });
+
+    // Auto-generate using Gemini AI if empty
+    if (topics.length === 0) {
+      const classLevel = req.user?.classLevel || 5;
+      await AIService.generateCurriculumForClass(classLevel);
+      topics = await Topic.find({ chapterId }).sort({ sequence: 1 });
+    }
+
     res.status(200).json({ success: true, message: 'Topics fetched successfully', data: topics });
   } catch (error) {
     next(error);
   }
 };
 
-export const getMissions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getMissions = async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { topicId } = req.params;
     const missions = await Mission.find({ topicId }).sort({ sequence: 1 });

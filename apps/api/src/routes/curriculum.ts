@@ -7,10 +7,10 @@ import { answerSubmissionSchema } from '@learnquest/validation';
 const router = Router();
 
 // Public routes for exploration
-router.get('/subjects', getSubjects);
-router.get('/subjects/:subjectId/chapters', getChapters);
-router.get('/chapters/:chapterId/topics', getTopics);
-router.get('/topics/:topicId/missions', getMissions);
+router.get('/subjects', getSubjects as any);
+router.get('/subjects/:subjectId/chapters', getChapters as any);
+router.get('/chapters/:chapterId/topics', getTopics as any);
+router.get('/topics/:topicId/missions', getMissions as any);
 
 // Protected answer validations
 router.post('/validate-answer', authenticate, validateRequest(answerSubmissionSchema), validateAnswer);
