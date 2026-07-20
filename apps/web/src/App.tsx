@@ -60,8 +60,12 @@ const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
     return <Navigate to="/onboard" replace />;
   }
 
-  if (!allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+  const isSuperAdmin = user.role === 'Super Administrator';
+  if (!isSuperAdmin && !allowedRoles.includes(user.role)) {
+    if (user.role === 'Student') return <Navigate to="/dashboard" replace />;
+    if (user.role === 'Parent') return <Navigate to="/parent/dashboard" replace />;
+    if (user.role === 'Teacher') return <Navigate to="/teacher/dashboard" replace />;
+    if (user.role === 'Platform Administrator') return <Navigate to="/admin/dashboard" replace />;
   }
 
   return <Outlet />;

@@ -36,6 +36,39 @@ const clearAuthState = () => {
   localStorage.removeItem('onboarded');
 };
 
+// Synchronously read initial state from localStorage so React Router never sees unauthenticated state on refresh!
+const getInitialAuthState = () => {
+  if (typeof window === 'undefined') {
+    return { user: null, profile: null, accessToken: null, isAuthenticated: false, onboarded: false };
+  }
+
+  const token = localStorage.getItem('accessToken');
+  const userStr = localStorage.getItem('user');
+  const profileStr = localStorage.getItem('profile');
+  const onboardedStr = localStorage.getItem('onboarded');
+
+  if (token && userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      const profile = profileStr ? JSON.parse(profileStr) : null;
+      const onboarded = onboardedStr ? JSON.parse(onboardedStr) : true;
+      return {
+        user,
+        profile,
+        accessToken: token,
+        isAuthenticated: true,
+        onboarded,
+      };
+    } catch (e) {
+      // Ignored
+    }
+  }
+
+  return { user: null, profile: null, accessToken: null, isAuthenticated: false, onboarded: false };
+};
+
+const initialAuth = getInitialAuthState();
+
 export const useAuthStore = create<AuthState>((set, get) => {
   // Listen for unauthorized logouts from API interceptor
   if (typeof window !== 'undefined') {
@@ -46,11 +79,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
   }
 
   return {
-    user: null,
-    profile: null,
-    accessToken: null,
-    isAuthenticated: false,
-    onboarded: false,
+    user: initialAuth.user,
+    profile: initialAuth.profile,
+    accessToken: initialAuth.accessToken,
+    isAuthenticated: initialAuth.isAuthenticated,
+    onboarded: initialAuth.onboarded,
     loading: false,
     error: null,
 
@@ -177,9 +210,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const savedUser = JSON.parse(userStr);
         const savedProfile = profileStr ? JSON.parse(profileStr) : null;
-        const savedOnboarded = onboardedStr ? JSON.parse(onboardedStr) : false;
+        const savedOnboarded = onboardedStr ? JSON.parse(onboardedStr) : true;
 
-        // Immediately restore authenticated state so page refresh and hard refresh NEVER log out the user!
+        // Ensure session is synchronized
         set({
           user: savedUser,
           profile: savedProfile,
@@ -189,7 +222,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
           loading: false,
         });
 
-        // Background non-blocking session check: verify/rotate access token if needed
+        // Background non-blocking session verification / token rotation
         try {
           const res = await api.post('/auth/refresh');
           const newAccessToken = res.data.data?.accessToken;
@@ -198,7 +231,6 @@ export const useAuthStore = create<AuthState>((set, get) => {
             set({ accessToken: newAccessToken });
           }
         } catch (refreshErr: any) {
-          // If refresh explicitly returned 401 (token revoked or expired > 7 days), trigger logout
           if (refreshErr.response?.status === 401) {
             clearAuthState();
             set({ user: null, profile: null, accessToken: null, isAuthenticated: false, onboarded: false });
