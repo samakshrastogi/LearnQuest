@@ -5,6 +5,7 @@ import { StudentProfile, School } from '../models/Profiles.js';
 import { AvatarItem, UserInventory } from '../models/Inventory.js';
 import { StudentMastery, MissionAttempt } from '../models/Activity.js';
 import { WalletService } from '../services/wallet.js';
+import { AIService } from '../services/ai.js';
 import { Reel } from '../models/Misc.js';
 import { QuestDTO } from '@learnquest/shared-types';
 
@@ -298,6 +299,34 @@ export const claimQuestReward = async (
           energy: student.energy,
         },
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generateRoadmap = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = req.user;
+    const student = await StudentProfile.findOne({ userId: user?._id });
+    if (!student) {
+      res.status(404).json({ success: false, message: 'Student profile not found' });
+      return;
+    }
+
+    const weakMasteries = await StudentMastery.find({ studentId: student._id, weakTopicFlag: true }).populate('topicId', 'name');
+    const weakTopicNames = weakMasteries.map((m: any) => m.topicId?.name).filter(Boolean);
+
+    const roadmap = await AIService.generateStudyRoadmap(student.classLevel, weakTopicNames);
+
+    res.status(200).json({
+      success: true,
+      message: 'AI 7-Day Study Roadmap generated',
+      data: roadmap,
     });
   } catch (error) {
     next(error);

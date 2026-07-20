@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuthStore } from '../store/auth';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, Send, Globe, Bot, User, Trash2, Volume2 } from 'lucide-react';
+import { Sparkles, Send, Globe, Bot, User, Trash2, Volume2, Mic, MicOff } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -24,7 +24,42 @@ export default function AITutorChat() {
   const [input, setInput] = useState('');
   const [chatLanguage, setChatLanguage] = useState<'en' | 'hi'>('en');
   const [sending, setSending] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleMicToggle = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in your browser. Try Google Chrome or Microsoft Edge!');
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = chatLanguage === 'hi' ? 'hi-IN' : 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.start();
+    } catch (err) {
+      setIsListening(false);
+    }
+  };
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -203,9 +238,25 @@ export default function AITutorChat() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t('chatPlaceholder') || 'Ask Guruji a query...'}
-            className="flex-1 glass-input py-2.5 text-xs focus:ring-0 focus:ring-offset-0 focus:border-slate-700"
+            placeholder={isListening ? 'Listening to your voice...' : (t('chatPlaceholder') || 'Ask Guruji a query...')}
+            className={`flex-1 glass-input py-2.5 text-xs focus:ring-0 focus:ring-offset-0 focus:border-slate-700 ${
+              isListening ? 'border-red-500/50 bg-red-500/10 animate-pulse' : ''
+            }`}
           />
+
+          <button
+            type="button"
+            onClick={handleMicToggle}
+            className={`p-2.5 rounded-xl border flex items-center justify-center shrink-0 transition-all ${
+              isListening
+                ? 'bg-red-500 text-white border-red-400 animate-bounce'
+                : 'bg-slate-850 hover:bg-slate-800 border-slate-800 text-slate-300'
+            }`}
+            title={isListening ? 'Listening...' : 'Speak to Guruji'}
+          >
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4 text-cyan-400" />}
+          </button>
+
           <button
             type="submit"
             disabled={!input.trim() || sending}

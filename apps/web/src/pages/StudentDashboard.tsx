@@ -5,10 +5,15 @@ import { useAuthStore } from '../store/auth';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Flame, Coins, ShieldAlert, Sparkles, BookOpen, Clock, BrainCircuit, Play } from 'lucide-react';
+import { Flame, Coins, ShieldAlert, Sparkles, BookOpen, Clock, BrainCircuit, Play, Map, Compass } from 'lucide-react';
 
 export default function StudentDashboard() {
   const { t } = useTranslation();
+  const { updateWallet } = useAuthStore();
+
+  const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
+  const [roadmap, setRoadmap] = useState<any | null>(null);
+  const [loadingRoadmap, setLoadingRoadmap] = useState(false);
 
   const { data: dashboardData, isLoading, error } = useQuery({
     queryKey: ['studentDashboard'],
@@ -17,6 +22,18 @@ export default function StudentDashboard() {
       return res.data.data;
     },
   });
+
+  const handleGenerateRoadmap = async () => {
+    setLoadingRoadmap(true);
+    try {
+      const res = await api.post('/students/roadmap');
+      setRoadmap(res.data.data);
+    } catch (err) {
+      alert('Failed to generate study roadmap.');
+    } finally {
+      setLoadingRoadmap(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -49,9 +66,6 @@ export default function StudentDashboard() {
     { day: 'Sat', minutes: 30 },
     { day: 'Sun', minutes: 18 },
   ];
-
-  const { updateWallet } = useAuthStore();
-  const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
 
   const handleClaimQuest = async (questId: string) => {
     try {
@@ -152,6 +166,46 @@ export default function StudentDashboard() {
               })}
             </div>
           </div>
+
+          {/* AI 7-Day Personal Study Roadmap */}
+          <div className="glass-card p-6 flex flex-col gap-4 border-amber-500/20 bg-gradient-to-r from-slate-900/80 to-amber-950/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Compass className="h-5 w-5 text-amber-400" />
+                <h3 className="font-extrabold text-sm text-slate-100">AI 7-Day Personalized Study Roadmap</h3>
+              </div>
+              <button
+                onClick={handleGenerateRoadmap}
+                disabled={loadingRoadmap}
+                className="btn-gold px-3.5 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-40"
+              >
+                <Sparkles className="h-3.5 w-3.5 fill-slate-950" />
+                <span>{loadingRoadmap ? 'Generating...' : 'Build AI Roadmap'}</span>
+              </button>
+            </div>
+
+            {roadmap ? (
+              <div className="grid sm:grid-cols-2 gap-3 mt-1">
+                {roadmap.days.map((d: any) => (
+                  <div key={d.dayNumber} className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] bg-amber-500/10 text-amber-400 font-extrabold px-2 py-0.5 rounded border border-amber-500/20 uppercase">
+                        Day {d.dayNumber}: {d.subject}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-bold">{d.estimatedMinutes} mins</span>
+                    </div>
+                    <h4 className="font-bold text-xs text-slate-200 mt-1">{d.title}</h4>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">{d.actionTask}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Click <strong>Build AI Roadmap</strong> to generate a custom 7-day study plan tailored to your weak subjects!
+              </p>
+            )}
+          </div>
+
         </div>
 
         {/* Right Side: Weak topics warning and Recommendations */}

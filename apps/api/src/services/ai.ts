@@ -472,4 +472,62 @@ Return pure JSON without markdown backticks matching this structure:
 
     return reelData;
   }
+
+  /**
+   * Generates a 7-Day Personal Study Roadmap using Gemini 1.5 Flash
+   */
+  static async generateStudyRoadmap(classLevel: number, weakTopics: string[]) {
+    const hasApiKey = !!env.AI_API_KEY;
+    let roadmap: any = null;
+
+    if (hasApiKey) {
+      try {
+        const prompt = `You are a CBSE Curriculum Academic Counselor.
+Generate a personalized 7-Day Study Roadmap for a Class ${classLevel} student whose weak topics are: ${weakTopics.join(', ') || 'Mathematics, Science'}.
+Return pure JSON without markdown backticks matching this structure:
+{
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Day 1 Focus",
+      "subject": "Mathematics",
+      "targetTopic": "Topic Name",
+      "actionTask": "Watch 1 reel and solve 5 quiz questions",
+      "estimatedMinutes": 25
+    }
+  ]
+}`;
+
+        let rawResponse = '';
+        const res = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${env.AI_MODEL || 'gemini-1.5-flash'}:generateContent?key=${env.AI_API_KEY}`,
+          { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+          { timeout: 10000 }
+        );
+        rawResponse = res.data.candidates[0].content.parts[0].text;
+        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          roadmap = JSON.parse(jsonMatch[0]);
+        }
+      } catch (err: any) {
+        logger.error(`⚠️ Gemini Roadmap Generation error: ${err.message}`);
+      }
+    }
+
+    if (!roadmap) {
+      roadmap = {
+        days: [
+          { dayNumber: 1, title: 'Math Foundations', subject: 'Mathematics', targetTopic: 'Number Sense & Fractions', actionTask: 'Complete 1 Math Kingdom Mission', estimatedMinutes: 20 },
+          { dayNumber: 2, title: 'Science Explorer', subject: 'Science', targetTopic: 'Photosynthesis & Leaves', actionTask: 'Watch 2 Science Reels', estimatedMinutes: 15 },
+          { dayNumber: 3, title: 'Grammar Quest', subject: 'English', targetTopic: 'Nouns & Tenses', actionTask: 'Ask Guruji 2 Doubts', estimatedMinutes: 15 },
+          { dayNumber: 4, title: 'Speed Revision', subject: 'Mathematics', targetTopic: 'Perimeter & Geometry', actionTask: 'Clear Level 5 Checkpoint', estimatedMinutes: 25 },
+          { dayNumber: 5, title: 'EVS Discovery', subject: 'Science', targetTopic: 'Water Cycle & Matter', actionTask: 'Watch Reel Quiz', estimatedMinutes: 20 },
+          { dayNumber: 6, title: 'Clan Practice', subject: 'General', targetTopic: 'Weak Subject Revision', actionTask: 'Solve 10 Quest Questions', estimatedMinutes: 30 },
+          { dayNumber: 7, title: 'Weekly Boss Challenge', subject: 'All', targetTopic: 'Championship Quiz', estimatedMinutes: 35 },
+        ],
+      };
+    }
+
+    return roadmap;
+  }
 }
