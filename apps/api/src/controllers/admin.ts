@@ -122,39 +122,41 @@ export const addCurriculumTopic = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { chapterId, subjectName, chapterName, name, sequence, description } = req.body;
-    let targetChapterId = chapterId;
+    const { name, sequence } = req.body;
 
-    if (!targetChapterId && (subjectName || chapterName)) {
-      let sub = await Subject.findOne({ name: subjectName || 'General Science' });
-      if (!sub) {
-        sub = new Subject({ name: subjectName || 'General Science', code: (subjectName || 'general').toLowerCase().replace(/\s+/g, '_') });
-        await sub.save();
-      }
-
-      let chap = await Chapter.findOne({ subjectId: sub._id, name: chapterName || 'Core Concepts' });
-      if (!chap) {
-        chap = new Chapter({ subjectId: sub._id, name: chapterName || 'Core Concepts', sequence: 1 });
-        await chap.save();
-      }
-      targetChapterId = chap._id;
+    if (!name || !name.trim()) {
+      res.status(400).json({ success: false, message: 'Topic name is required' });
+      return;
     }
 
-    if (!targetChapterId) {
-      let defaultSub = await Subject.findOne({});
-      if (!defaultSub) {
-        defaultSub = new Subject({ name: 'General Knowledge', code: 'gk' });
-        await defaultSub.save();
+    let chapter = await Chapter.findOne({});
+    if (!chapter) {
+      let subject = await Subject.findOne({});
+      if (!subject) {
+        subject = new Subject({ name: 'General Curriculum', code: 'general' });
+        await subject.save();
       }
-      let defaultChap = await Chapter.findOne({ subjectId: defaultSub._id });
-      if (!defaultChap) {
-        defaultChap = new Chapter({ subjectId: defaultSub._id, name: 'Foundation Topics', sequence: 1 });
-        await defaultChap.save();
-      }
-      targetChapterId = defaultChap._id;
+      chapter = new Chapter({
+        subjectId: subject._id,
+        name: 'General Topics',
+        sequence: 1,
+      });
+      await chapter.save();
     }
 
-    const topic = new Topic({ chapterId: targetChapterId, name, sequence: sequence || 1, description: description || '' });
+    let topicSeq = sequence ? parseInt(String(sequence), 10) : 1;
+
+    const existingTopicWithSeq = await Topic.findOne({ chapterId: chapter._id, sequence: topicSeq });
+    if (existingTopicWithSeq) {
+      const lastTopic = await Topic.findOne({ chapterId: chapter._id }).sort({ sequence: -1 });
+      topicSeq = lastTopic ? lastTopic.sequence + 1 : 1;
+    }
+
+    const topic = new Topic({
+      chapterId: chapter._id,
+      name: name.trim(),
+      sequence: topicSeq,
+    });
     await topic.save();
 
     res.status(201).json({ success: true, message: 'Topic created successfully', data: topic });

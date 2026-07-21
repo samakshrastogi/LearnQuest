@@ -5,10 +5,6 @@ import { BookOpen, Plus, Trash2, Sparkles, Database, Layers, CheckCircle2 } from
 
 export default function AdminReelTopics() {
   const [topicName, setTopicName] = useState('');
-  const [subjectName, setSubjectName] = useState('Mathematics');
-  const [chapterName, setChapterName] = useState('Chapter 1');
-  const [classLevel, setClassLevel] = useState(5);
-  const [description, setDescription] = useState('');
   const [sequence, setSequence] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -35,16 +31,12 @@ export default function AdminReelTopics() {
     try {
       await api.post('/admin/curriculum/topics', {
         name: topicName.trim(),
-        subjectName,
-        chapterName,
-        classLevel,
-        description,
         sequence,
       });
 
       showToast('✨ Topic added successfully for Class 1-5 dropdown!');
       setTopicName('');
-      setDescription('');
+      setSequence((prev) => prev + 1);
       refetch();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to add topic.');
@@ -118,67 +110,13 @@ export default function AdminReelTopics() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Target Class (1-5)</label>
-                <select
-                  value={classLevel}
-                  onChange={(e) => setClassLevel(parseInt(e.target.value, 10))}
-                  className="glass-input py-2 text-xs bg-slate-950"
-                >
-                  <option value={1}>Class 1</option>
-                  <option value={2}>Class 2</option>
-                  <option value={3}>Class 3</option>
-                  <option value={4}>Class 4</option>
-                  <option value={5}>Class 5</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Subject</label>
-                <select
-                  value={subjectName}
-                  onChange={(e) => setSubjectName(e.target.value)}
-                  className="glass-input py-2 text-xs bg-slate-950"
-                >
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Science">Science</option>
-                  <option value="English">English</option>
-                  <option value="General Knowledge">General Knowledge</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Chapter Name</label>
-                <input
-                  type="text"
-                  value={chapterName}
-                  onChange={(e) => setChapterName(e.target.value)}
-                  placeholder="e.g. Numbers & Arithmetic"
-                  className="glass-input py-2 text-xs"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Sequence Order</label>
-                <input
-                  type="number"
-                  value={sequence}
-                  onChange={(e) => setSequence(parseInt(e.target.value, 10))}
-                  className="glass-input py-2 text-xs bg-slate-950"
-                />
-              </div>
-            </div>
-
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Topic Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief summary of learning goals..."
-                className="glass-input py-2 text-xs h-20 resize-none"
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Sequence Order</label>
+              <input
+                type="number"
+                value={sequence}
+                onChange={(e) => setSequence(parseInt(e.target.value, 10))}
+                className="glass-input py-2.5 text-xs bg-slate-950"
               />
             </div>
 
@@ -208,21 +146,16 @@ export default function AdminReelTopics() {
             <div className="text-center p-8 text-xs text-slate-500 italic">No topics configured yet. Add one above!</div>
           ) : (
             <div className="flex flex-col gap-2.5 max-h-[550px] overflow-y-auto pr-1">
-              {topics.map((t: any) => (
+              {topics.map((t: any, idx: number) => (
                 <div
                   key={t._id}
                   className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 hover:border-slate-700 transition-all"
                 >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-slate-100">{t.name}</span>
-                      {t.chapterId?.subjectId?.name && (
-                        <span className="text-[10px] bg-cyan-500/10 text-cyan-400 font-bold px-2 py-0.5 rounded-full border border-cyan-500/20">
-                          {t.chapterId.subjectId.name}
-                        </span>
-                      )}
-                    </div>
-                    {t.description && <p className="text-[11px] text-slate-400 leading-tight">{t.description}</p>}
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 font-extrabold text-xs flex items-center justify-center border border-amber-500/20">
+                      {t.sequence || idx + 1}
+                    </span>
+                    <span className="text-xs font-black text-slate-100">{t.name}</span>
                   </div>
 
                   <button
