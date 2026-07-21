@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../utils/api';
 import { BookOpen, Plus, Trash2, Sparkles, Database, Layers, CheckCircle2, X } from 'lucide-react';
 
 export default function AdminReelTopics() {
+  const queryClient = useQueryClient();
   const [topicName, setTopicName] = useState('');
   const [sequence, setSequence] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +39,9 @@ export default function AdminReelTopics() {
       showToast('✨ Topic added with unique serial sequence!');
       setTopicName('');
       setSequence((prev) => prev + 1);
+      
+      queryClient.invalidateQueries({ queryKey: ['adminAllTopics'] });
+      queryClient.invalidateQueries({ queryKey: ['allTopicsList'] });
       refetch();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to add topic.');
@@ -51,6 +55,8 @@ export default function AdminReelTopics() {
     try {
       await api.delete(`/admin/curriculum/topics/${topicId}`);
       showToast('Topic deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['adminAllTopics'] });
+      queryClient.invalidateQueries({ queryKey: ['allTopicsList'] });
       refetch();
     } catch (err: any) {
       alert('Failed to delete topic');
