@@ -110,6 +110,7 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboards />} />
             <Route path="/profile" element={<StudentProfilePage />} />
             <Route path="/ai-tutor" element={<AITutorChat />} />
+            <Route path="/admin/reels-topics" element={<AdminReelTopics />} />
           </Route>
         </Route>
 

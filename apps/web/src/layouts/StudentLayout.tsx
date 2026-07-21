@@ -21,11 +21,12 @@ import {
   Coins,
   Gem,
   Flame,
-  Globe
+  Globe,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function StudentLayout() {
-  const { profile, logout } = useAuthStore();
+  const { user, profile, logout } = useAuthStore();
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ export default function StudentLayout() {
     { label: t('tournaments'), path: '/tournaments', icon: Trophy },
     { label: t('leaderboard'), path: '/leaderboard', icon: BarChart3 },
     { label: t('profile'), path: '/profile', icon: User },
+    { label: 'Admin Page', path: '/admin/reels-topics', icon: ShieldCheck },
   ];
 
   const handleLogout = async () => {
