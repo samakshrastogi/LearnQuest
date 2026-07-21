@@ -5,6 +5,7 @@ import {
   addCurriculumSubject,
   addCurriculumChapter,
   addCurriculumTopic,
+  deleteCurriculumTopic,
   addCurriculumMission,
   addCurriculumQuestion,
   addGameLevelQuestions,
@@ -22,6 +23,7 @@ router.post('/teachers/approve', approveTeacher as any);
 router.post('/curriculum/subjects', addCurriculumSubject as any);
 router.post('/curriculum/chapters', addCurriculumChapter as any);
 router.post('/curriculum/topics', addCurriculumTopic as any);
+router.delete('/curriculum/topics/:topicId', deleteCurriculumTopic as any);
 router.post('/curriculum/missions', addCurriculumMission as any);
 router.post('/curriculum/questions', addCurriculumQuestion as any);
 router.post('/curriculum/level-questions', addGameLevelQuestions as any);

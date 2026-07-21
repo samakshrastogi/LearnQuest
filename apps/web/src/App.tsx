@@ -35,6 +35,7 @@ import TeacherDashboard from './pages/TeacherDashboard';
 // Admin pages
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCurriculum from './pages/AdminCurriculum';
+import AdminReelTopics from './pages/AdminReelTopics';
 
 // Error pages
 import NotFound from './pages/NotFound';
@@ -131,6 +132,7 @@ function App() {
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/curriculum" element={<AdminCurriculum />} />
+            <Route path="/admin/reels-topics" element={<AdminReelTopics />} />
           </Route>
         </Route>
 

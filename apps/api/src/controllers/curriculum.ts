@@ -57,6 +57,34 @@ export const getTopics = async (req: any, res: Response, next: NextFunction): Pr
   }
 };
 
+export const getAllTopics = async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    let topics = await Topic.find({})
+      .populate({
+        path: 'chapterId',
+        select: 'name sequence subjectId',
+        populate: { path: 'subjectId', select: 'name code icon' },
+      })
+      .sort({ sequence: 1 });
+
+    if (topics.length === 0) {
+      const classLevel = req.user?.classLevel || 5;
+      await AIService.generateCurriculumForClass(classLevel);
+      topics = await Topic.find({})
+        .populate({
+          path: 'chapterId',
+          select: 'name sequence subjectId',
+          populate: { path: 'subjectId', select: 'name code icon' },
+        })
+        .sort({ sequence: 1 });
+    }
+
+    res.status(200).json({ success: true, message: 'All topics fetched successfully', data: topics });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getMissions = async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { topicId } = req.params;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
-import { ShieldCheck, LayoutDashboard, Database, LogOut } from 'lucide-react';
+import { ShieldCheck, LayoutDashboard, Database, LogOut, BookOpen } from 'lucide-react';
 
 export default function AdminLayout() {
   const { logout, user } = useAuthStore();
@@ -33,6 +33,17 @@ export default function AdminLayout() {
           >
             <LayoutDashboard className="h-5 w-5" />
             System Status
+          </Link>
+          <Link
+            to="/admin/reels-topics"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+              location.pathname === '/admin/reels-topics'
+                ? 'bg-amber-500/15 text-amber-500 border-l-4 border-amber-500'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <BookOpen className="h-5 w-5 text-amber-400" />
+            Class 1-5 Topics
           </Link>
           <Link
             to="/admin/curriculum"

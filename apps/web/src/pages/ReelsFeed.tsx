@@ -56,11 +56,23 @@ export default function ReelsFeed() {
   const [quizCompletedReward, setQuizCompletedReward] = useState<any | null>(null);
   const [quizSubmitting, setQuizSubmitting] = useState(false);
 
+  const { profile, user } = useAuthStore();
+  const isClass1to5 = profile?.classLevel ? profile.classLevel <= 5 : true;
+
   // 1. Fetch Subjects list
   const { data: subjects = [] } = useQuery({
     queryKey: ['subjectsList'],
     queryFn: async () => {
       const res = await api.get('/curriculum/subjects');
+      return res.data.data;
+    },
+  });
+
+  // Fetch All Topics directly for Class 1-5 single dropdown
+  const { data: allTopics = [] } = useQuery({
+    queryKey: ['allTopicsList'],
+    queryFn: async () => {
+      const res = await api.get('/curriculum/all-topics');
       return res.data.data;
     },
   });
@@ -275,48 +287,73 @@ export default function ReelsFeed() {
         
         {/* Left: Dropdowns */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Subject Dropdown */}
-          <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
-            <Layers className="h-4 w-4 text-amber-500 shrink-0" />
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => {
-                setSelectedSubjectId(e.target.value);
-                setSelectedChapterId('');
-                setSelectedTopicId('');
-                setActiveReelIndex(0);
-              }}
-              className="bg-transparent text-xs font-bold text-slate-200 outline-none cursor-pointer pr-2"
-            >
-              <option value="" className="bg-slate-900 text-slate-200">All Subjects</option>
-              {subjects.map((s: any) => (
-                <option key={s._id} value={s._id} className="bg-slate-900 text-slate-200">
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isClass1to5 ? (
+            /* Single Topic Dropdown for Class 1-5 Students */
+            <div className="flex items-center gap-2.5 bg-gradient-to-r from-slate-950 to-amber-950/30 px-4 py-2.5 rounded-xl border border-amber-500/40 shadow-lg">
+              <BookOpen className="h-4.5 w-4.5 text-amber-400 shrink-0" />
+              <span className="text-xs font-black text-amber-400 uppercase tracking-wider hidden sm:inline">Select Topic:</span>
+              <select
+                value={selectedTopicId}
+                onChange={(e) => {
+                  setSelectedTopicId(e.target.value);
+                  setActiveReelIndex(0);
+                }}
+                className="bg-transparent text-xs font-black text-slate-100 outline-none cursor-pointer pr-2 max-w-[260px] sm:max-w-xs"
+              >
+                <option value="" className="bg-slate-900 text-slate-200">All Chapter Topics 🎯</option>
+                {allTopics.map((t: any) => (
+                  <option key={t._id} value={t._id} className="bg-slate-900 text-slate-200">
+                    {t.name} {t.chapterId?.subjectId?.name ? `(${t.chapterId.subjectId.name})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <>
+              {/* Subject Dropdown */}
+              <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
+                <Layers className="h-4 w-4 text-amber-500 shrink-0" />
+                <select
+                  value={selectedSubjectId}
+                  onChange={(e) => {
+                    setSelectedSubjectId(e.target.value);
+                    setSelectedChapterId('');
+                    setSelectedTopicId('');
+                    setActiveReelIndex(0);
+                  }}
+                  className="bg-transparent text-xs font-bold text-slate-200 outline-none cursor-pointer pr-2"
+                >
+                  <option value="" className="bg-slate-900 text-slate-200">All Subjects</option>
+                  {subjects.map((s: any) => (
+                    <option key={s._id} value={s._id} className="bg-slate-900 text-slate-200">
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Chapter Dropdown */}
-          <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
-            <BookOpen className="h-4 w-4 text-cyan-400 shrink-0" />
-            <select
-              value={selectedChapterId}
-              onChange={(e) => {
-                setSelectedChapterId(e.target.value);
-                setSelectedTopicId('');
-                setActiveReelIndex(0);
-              }}
-              className="bg-transparent text-xs font-bold text-slate-200 outline-none cursor-pointer pr-2"
-            >
-              <option value="" className="bg-slate-900 text-slate-200">All Chapters</option>
-              {chapters.map((c: any) => (
-                <option key={c._id} value={c._id} className="bg-slate-900 text-slate-200">
-                  Ch {c.sequence}: {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Chapter Dropdown */}
+              <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
+                <BookOpen className="h-4 w-4 text-cyan-400 shrink-0" />
+                <select
+                  value={selectedChapterId}
+                  onChange={(e) => {
+                    setSelectedChapterId(e.target.value);
+                    setSelectedTopicId('');
+                    setActiveReelIndex(0);
+                  }}
+                  className="bg-transparent text-xs font-bold text-slate-200 outline-none cursor-pointer pr-2"
+                >
+                  <option value="" className="bg-slate-900 text-slate-200">All Chapters</option>
+                  {chapters.map((c: any) => (
+                    <option key={c._id} value={c._id} className="bg-slate-900 text-slate-200">
+                      Ch {c.sequence}: {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right: Actions */}
@@ -350,70 +387,72 @@ export default function ReelsFeed() {
         </div>
       )}
 
-      {/* 2. Main Content Grid: Left Topic Sidebar + Right Portrait Reels Player */}
+      {/* 2. Main Content Grid: Left Topic Sidebar (Class 6+) + Portrait Reels Player */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         
-        {/* Topic Sidebar List */}
-        <div className="md:col-span-4 bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl backdrop-blur-md flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-accent-gold" />
-              Chapter Topics
-            </h3>
-            <span className="text-[10px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded-full">
-              {topics.length} Topics
-            </span>
-          </div>
+        {/* Topic Sidebar List (Only for Class 6+ / Advanced) */}
+        {!isClass1to5 && (
+          <div className="md:col-span-4 bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl backdrop-blur-md flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-accent-gold" />
+                Chapter Topics
+              </h3>
+              <span className="text-[10px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded-full">
+                {topics.length} Topics
+              </span>
+            </div>
 
-          {topics.length === 0 ? (
-            <p className="text-xs text-slate-500 italic text-center py-6">
-              Select a chapter to view its syllabus topic list.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
-              <button
-                onClick={() => {
-                  setSelectedTopicId('');
-                  setActiveReelIndex(0);
-                }}
-                className={`p-3 rounded-2xl text-left text-xs font-bold border transition-all flex items-center justify-between ${
-                  !selectedTopicId
-                    ? 'bg-amber-500/15 border-accent-gold text-accent-gold'
-                    : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:bg-slate-800'
-                }`}
-              >
-                <span>All Chapter Topics</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
-
-              {topics.map((t: any, idx: number) => (
+            {topics.length === 0 ? (
+              <p className="text-xs text-slate-500 italic text-center py-6">
+                Select a chapter to view its syllabus topic list.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
                 <button
-                  key={t._id}
                   onClick={() => {
-                    setSelectedTopicId(t._id);
+                    setSelectedTopicId('');
                     setActiveReelIndex(0);
                   }}
                   className={`p-3 rounded-2xl text-left text-xs font-bold border transition-all flex items-center justify-between ${
-                    selectedTopicId === t._id
-                      ? 'bg-amber-500/15 border-accent-gold text-accent-gold shadow-md'
+                    !selectedTopicId
+                      ? 'bg-amber-500/15 border-accent-gold text-accent-gold'
                       : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:bg-slate-800'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="h-5 w-5 rounded-full bg-slate-800 text-[10px] flex items-center justify-center text-slate-300 shrink-0">
-                      {idx + 1}
-                    </span>
-                    <span className="line-clamp-1">{t.name}</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 shrink-0" />
+                  <span>All Chapter Topics</span>
+                  <ChevronRight className="h-4 w-4" />
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
+
+                {topics.map((t: any, idx: number) => (
+                  <button
+                    key={t._id}
+                    onClick={() => {
+                      setSelectedTopicId(t._id);
+                      setActiveReelIndex(0);
+                    }}
+                    className={`p-3 rounded-2xl text-left text-xs font-bold border transition-all flex items-center justify-between ${
+                      selectedTopicId === t._id
+                        ? 'bg-amber-500/15 border-accent-gold text-accent-gold shadow-md'
+                        : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="h-5 w-5 rounded-full bg-slate-800 text-[10px] flex items-center justify-center text-slate-300 shrink-0">
+                        {idx + 1}
+                      </span>
+                      <span className="line-clamp-1">{t.name}</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Portrait Reels Player Viewport */}
-        <div className="md:col-span-8 flex flex-col items-center gap-4">
+        <div className={`${isClass1to5 ? 'md:col-span-12' : 'md:col-span-8'} flex flex-col items-center gap-4`}>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
               <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-accent-gold"></div>
