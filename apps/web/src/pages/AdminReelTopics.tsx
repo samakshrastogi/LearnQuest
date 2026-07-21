@@ -97,89 +97,24 @@ export default function AdminReelTopics() {
         </button>
       </div>
 
-      {/* Main Grid: Add Topic Form + Topics Table */}
-      <div className="grid md:grid-cols-12 gap-6 items-start">
-        
-        {/* Left Form: Add New Topic */}
-        <div className="md:col-span-5 glass-card p-6 flex flex-col gap-4 border-slate-800">
-          <div className="flex items-center gap-2 text-slate-200 font-extrabold text-sm border-b border-slate-800 pb-3">
-            <Plus className="h-4 w-4 text-amber-400" />
-            Add New Reel Topic
-          </div>
-
-          <form onSubmit={handleAddTopic} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Topic Name *</label>
-              <input
-                type="text"
-                required
-                value={topicName}
-                onChange={(e) => setTopicName(e.target.value)}
-                placeholder="e.g. Addition & Subtraction Quests"
-                className="glass-input py-2.5 text-xs"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Serial No. (Unique Sequence)</label>
-              <input
-                type="number"
-                value={sequence}
-                onChange={(e) => setSequence(parseInt(e.target.value, 10))}
-                className="glass-input py-2.5 text-xs bg-slate-950"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting || !topicName.trim()}
-              className="btn-gold py-2.5 text-xs font-bold flex items-center justify-center gap-2 mt-2 shadow-lg disabled:opacity-50"
-            >
-              <Sparkles className="h-4 w-4 fill-slate-950" />
-              <span>{submitting ? 'Adding Topic...' : 'Add Topic to Class 1-5 List'}</span>
-            </button>
-          </form>
+      {/* Page Hero Card */}
+      <div className="glass-card p-10 flex flex-col items-center justify-center text-center gap-4 border-slate-800 bg-slate-900/60 backdrop-blur-md">
+        <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 shadow-inner">
+          <BookOpen className="h-8 w-8" />
         </div>
-
-        {/* Right Table: List of Topics */}
-        <div className="md:col-span-7 glass-card p-6 flex flex-col gap-4 border-slate-800">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 className="text-sm font-extrabold text-slate-200 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-cyan-400" />
-              Configured Dropdown Topics ({topics.length})
-            </h3>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8 text-xs text-slate-400">Loading topics...</div>
-          ) : topics.length === 0 ? (
-            <div className="text-center p-8 text-xs text-slate-500 italic">No topics configured yet. Add one above!</div>
-          ) : (
-            <div className="flex flex-col gap-2.5 max-h-[550px] overflow-y-auto pr-1">
-              {topics.map((t: any, idx: number) => (
-                <div
-                  key={t._id}
-                  className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 hover:border-slate-700 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-400 font-black text-xs flex items-center justify-center border border-amber-500/20">
-                      {t.sequence || idx + 1}
-                    </span>
-                    <span className="text-xs font-black text-slate-100">{t.name}</span>
-                  </div>
-
-                  <button
-                    onClick={() => handleDeleteTopic(t._id)}
-                    className="p-2 bg-slate-900 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-500/20 rounded-xl transition-all shrink-0"
-                    title="Delete Topic"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+        <div>
+          <h2 className="text-lg font-black text-slate-100">Class 1 to 5 Reel Topics Management Portal</h2>
+          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+            Click the button below to open the interactive manager modal where you can add new topics with unique serial sequence numbers or delete configured items for student dropdowns.
+          </p>
         </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-gold px-6 py-3.5 rounded-2xl text-xs font-black flex items-center gap-2.5 shadow-2xl shadow-amber-500/15 transform hover:scale-105 transition-all mt-2"
+        >
+          <Sparkles className="h-4 w-4 fill-slate-950" />
+          <span>Open Class 1 to 5 Topics Manager</span>
+        </button>
       </div>
 
       {/* Class 1 to 5 Topics Modal Overlay */}
