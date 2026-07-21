@@ -303,7 +303,7 @@ export default function ReelsFeed() {
                 <option value="" className="bg-slate-900 text-slate-200">All Chapter Topics 🎯</option>
                 {allTopics.map((t: any) => (
                   <option key={t._id} value={t._id} className="bg-slate-900 text-slate-200">
-                    {t.name} {t.chapterId?.subjectId?.name ? `(${t.chapterId.subjectId.name})` : ''}
+                    {t.name}
                   </option>
                 ))}
               </select>

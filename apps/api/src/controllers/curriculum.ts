@@ -65,11 +65,38 @@ export const getAllTopics = async (req: any, res: Response, next: NextFunction):
         select: 'name sequence subjectId',
         populate: { path: 'subjectId', select: 'name code icon' },
       })
-      .sort({ sequence: 1 });
+      .sort({ sequence: 1, createdAt: 1 });
 
     if (topics.length === 0) {
       const classLevel = req.user?.classLevel || 5;
       await AIService.generateCurriculumForClass(classLevel);
+      topics = await Topic.find({})
+        .populate({
+          path: 'chapterId',
+          select: 'name sequence subjectId',
+          populate: { path: 'subjectId', select: 'name code icon' },
+        })
+        .sort({ sequence: 1, createdAt: 1 });
+    }
+
+    // Deduplicate/normalize sequences so every topic has a unique serial number (1, 2, 3, 4...)
+    const seenSequences = new Set<number>();
+    let hasDuplicates = false;
+
+    for (const t of topics) {
+      if (seenSequences.has(t.sequence) || !t.sequence) {
+        hasDuplicates = true;
+        break;
+      }
+      seenSequences.add(t.sequence);
+    }
+
+    if (hasDuplicates) {
+      for (let i = 0; i < topics.length; i++) {
+        const serialNum = i + 1;
+        topics[i].sequence = serialNum;
+        await Topic.findByIdAndUpdate(topics[i]._id, { sequence: serialNum });
+      }
       topics = await Topic.find({})
         .populate({
           path: 'chapterId',

@@ -144,12 +144,17 @@ export const addCurriculumTopic = async (
       await chapter.save();
     }
 
-    let topicSeq = sequence ? parseInt(String(sequence), 10) : 1;
+    let topicSeq = sequence ? parseInt(String(sequence), 10) : 0;
+    const allTopics = await Topic.find({}).sort({ sequence: -1 });
 
-    const existingTopicWithSeq = await Topic.findOne({ chapterId: chapter._id, sequence: topicSeq });
+    if (!topicSeq || topicSeq <= 0) {
+      topicSeq = allTopics.length > 0 ? (allTopics[0].sequence || 0) + 1 : 1;
+    }
+
+    const existingTopicWithSeq = await Topic.findOne({ sequence: topicSeq });
     if (existingTopicWithSeq) {
-      const lastTopic = await Topic.findOne({ chapterId: chapter._id }).sort({ sequence: -1 });
-      topicSeq = lastTopic ? lastTopic.sequence + 1 : 1;
+      const highestTopic = allTopics[0];
+      topicSeq = highestTopic ? (highestTopic.sequence || 0) + 1 : 1;
     }
 
     const topic = new Topic({
